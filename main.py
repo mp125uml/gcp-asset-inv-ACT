@@ -15,6 +15,7 @@ from google.cloud import storage
 from google.api_core.exceptions import GoogleAPIError
 import proto
 import googleapiclient.errors
+from datetime import datetime
 
 # Declare as global because this is used in so many places for logic, etc
 act_file_no = os.getenv('ACT_FILE_NO')
@@ -429,7 +430,7 @@ def csv_for_251(cvsfile, dictionary):
                  writer.writerow(sa_value)
 
 def csv_for_252(csvfile, dictionary):
-            header = ['RESOURCE_TYPE','UNIQUE_ID', 'SOR', 'RESOURCE_LOCATION', 'NAME', "STATUS", "PRIV_IND", "CERT_TYPE", "CERT_ENTITY", "DESCRIPTION", "OWNING_APPL"]
+            header = ["RESOURCE_TYPE","UNIQUE_ID", "SOR", "RESOURCE_LOCATION", "NAME", "STATUS", "PRIV_IND", "CERT_TYPE", "CERT_ENTITY", "DESCRIPTION", "OWNING_APPL"]
             writer = csv.writer(csvfile, delimiter="|")
             writer.writerow(header)
             role = "Role"
@@ -442,7 +443,8 @@ def csv_for_252(csvfile, dictionary):
             owning_appl = "GCP"
             for _sa, sa_value in dictionary.items():
                 for i in sa_value['Entitlement']:
-                    unique_id = "_".join(i.split("_", 2)[:2]).replace('(\'','').replace('\'),','')
+                    unique_id = "_".join(i.split("_", 2)[:2])
+                    print(unique_id)
                     resource_location = i.split("_", 2)[-1].replace("(","").replace(")","")
                     resource_location = resource_location.split('@')[0].replace('@','')
                     name = i.split('@')[0].replace('@','').replace("(","").replace(")","")
@@ -450,7 +452,7 @@ def csv_for_252(csvfile, dictionary):
                                                                                                   description, owning_appl])
 
 def csv_for_253(csvfile, dictionary):
-            header = ['UNIQUE_ID', 'SOR', 'ID_LOCATION', "PRIV_IND", "ATTR_NAME1", "ATTR_VALUE1", "ATTR_NAME2", "ATTR_VALUE2", "ATTR_CONTROL", "LOCATION", "ENTITLEMENT STATUS", "OWNING_APPLICATION"]
+            header = ["UNIQUE_ID", "SOR", "ID_LOCATION", "PRIV_IND", "ATTR_NAME1", "ATTR_VALUE1", "ATTR_NAME2", "ATTR_VALUE2", "ATTR_CONTROL", "LOCATION", "ENTITLEMENT STATUS", "OWNING_APPLICATION"]
             writer = csv.writer(csvfile, delimiter="|")
             writer.writerow(header)
             sor = ""
@@ -473,6 +475,22 @@ def csv_for_253(csvfile, dictionary):
                     writer.writerow([unique_id, sor, id_location, priv_ind, attr_name1, attr_value1, attr_name2, attr_value2,
                                                                attr_control, location, entitlement_status, owning_application])
 
+def csv_for_255(csvfile, dictionary):
+            header = ["DATE_STAMP", "OWNING_APPLICATION", "HASH_ALGORITHM", "FILE_FORMAT", "T251_ROWS"]
+            writer = csv.writer(csvfile, delimiter="|")
+            writer.writerow(header)
+            timestamp = datetime.today().strftime('%Y/%m/%d %H:%M:%S')
+            owning_app = "GCP"
+            hash_algorithm = ""
+            #T-251 Rows
+            count = 1
+            for _sa, sa_value in dictionary.items():
+                count += 1
+                t251_rows = count
+            
+            file_format = "ASCII-CRLF" #Determined this with Linux `file` command
+            writer.writerow([timestamp, owning_app, hash_algorithm, file_format, t251_rows])
+
 def write_dictionary_to_csv(dictionary, filename):
     # Creating the dictionary. A dictionary of *some* values is always needed
     # Logic per ACT file
@@ -494,21 +512,28 @@ def write_dictionary_to_csv(dictionary, filename):
             'OWNING_APPL',
             'LAST_LOGIN'
         ]
+        csv_file = filena,e
     elif act_file_no == "file-252":
         csv_columns = [ 'Entitlement' ]
         csv_file = filename
-    else: #<- file-253 
+    elif act_file_no == "file-253":
         csv_columns = [ 'Entitlement', 'UNIQUE_ID' ]
         csv_file = filename
-    
+    else:
+        csv_columns = []
+        csv_file = filename
+
         try:
             with open(csv_file, 'w') as csvfile:
                 if act_file_no == "file-251":
                     csv_for_251(csvfile, dictionary)
                 elif act_file_no == "file-252":
                     csv_for_252(csvfile, dictionary)
-                else: #<- file-253
+                elif act_file_no == "file-253":
                     csv_for_253(csvfile, dictionary)
+                else:
+                    csv_for_255(csvfile, dictionary)
+		
                 
 
         except IOError:
@@ -605,7 +630,6 @@ def run_remote():
     merged_iam_sa_dictionary = parse_assets_output(all_iam_policies,
                                                    all_svc_accts, gcp_org_id)
     csv_file_full_path = f"/tmp/{csv_filename}"
-    # Passed in for file-* logic
     write_dictionary_to_csv(merged_iam_sa_dictionary, csv_file_full_path)
     print(f"Wrote results to {csv_file_full_path}")
     upload_file_gcp_bucket(gcs_bucket, csv_filename, csv_file_full_path)
