@@ -422,6 +422,12 @@ def parse_assets_output(all_iam_policies_dictionary,
     # print (json.dumps(output_dict, indent=2, default=str))
     return output_dict
 
+def csv_for_251(cvsfile, dictionary):
+             writer = csv.DictWriter(csvfile, fieldnames=csv_columns, delimiter='|')
+             writer.writeheader()
+             for _sa, sa_value in dictionary.items():
+                 writer.writerow(sa_value)
+
 def csv_for_252(csvfile, dictionary):
             header = ['RESOURCE_TYPE','UNIQUE_ID', 'SOR', 'RESOURCE_LOCATION', 'NAME', "STATUS", "PRIV_IND", "CERT_TYPE", "CERT_ENTITY", "DESCRIPTION", "OWNING_APPL"]
             writer = csv.writer(csvfile, delimiter="|")
@@ -472,8 +478,21 @@ def write_dictionary_to_csv(dictionary, filename):
     # Logic per ACT file
     if act_file_no == "file-251":
         csv_columns = [
-            # change headers - file 251
-            'RECORD_TYPE','UNIQUE_ID', 'SOR', 'ID_LOCATION', 'EMAIL_DO_WE_NEED', 'NAME', 'STATUS', 'PRIV_IND', 'CERT_TYPE', 'CERT_ENTITY', 'LAST_NAME', 'EMP_ID', 'TID', 'AU', 'OWNING_APPL', 'LAST_LOGIN'
+            'RECORD_TYPE',
+            'UNIQUE_ID',
+            'SOR',
+            'ID_LOCATION',
+            'NAME',
+            'STATUS',
+            'PRIV_IND',
+            'CERT_TYPE', 
+            'CERT_ENTITY', 
+            'LAST_NAME', 
+            'EMP_ID', 
+            'TID', 
+            'AU', 
+            'OWNING_APPL',
+            'LAST_LOGIN'
         ]
     elif act_file_no == "file-252":
         csv_columns = [ 'Entitlement' ]
@@ -481,15 +500,11 @@ def write_dictionary_to_csv(dictionary, filename):
     else: #<- file-253 
         csv_columns = [ 'Entitlement', 'UNIQUE_ID' ]
         csv_file = filename
-
+    
         try:
             with open(csv_file, 'w') as csvfile:
                 if act_file_no == "file-251":
-                #    file 251 - change delimiter
-                    writer = csv.DictWriter(csvfile, fieldnames=csv_columns, delimiter='|')
-                    writer.writeheader()
-                    for _sa, sa_value in dictionary.items():
-                        writer.writerow(sa_value)
+                    csv_for_251(csvfile, dictionary)
                 elif act_file_no == "file-252":
                     csv_for_252(csvfile, dictionary)
                 else: #<- file-253
