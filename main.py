@@ -16,6 +16,8 @@ from google.api_core.exceptions import GoogleAPIError
 import proto
 import googleapiclient.errors
 
+# Declare as global because this is used in so many places for logic, etc
+act_file_no = os.getenv('ACT_FILE_NO')
 
 def get_all_sas(org_id):
     """
@@ -225,7 +227,7 @@ def get_policy_for_identity(identity_info,
         rsc = f"{rsc_type}_({rsc_name})"
         role = binding['role'].replace('roles/', '') # <-
         # new fields - file 251
-        if os.getenv("ACT_FILE_NO") == "file-251":
+        if act_file_no == "file-251":
             principal_policy[identity_info['email']] = {
                 "RECORD_TYPE": "S",
                 "UNIQUE_ID": identity_info['uid'],
@@ -244,11 +246,17 @@ def get_policy_for_identity(identity_info,
                 "LAST_LOGIN": ""
                 # remove entitlement - file 251
             }
-        else:
+        elif act_file_no == "file-251":
             principal_policy[identity_info['email']] = {
 	      # entitlement only - file 252
                 "Entitlement": [f"{role}_{rsc}"]
             }
+        else:
+            principal_policy[identity_info['email']] = {
+                "Entitlement": [f"{role}_{rsc}"],
+                "UNIQUE_ID": identity_info['uid']
+            }
+
 
     else:
         client = asset_v1.AssetServiceClient()
@@ -286,7 +294,7 @@ def get_policy_for_identity(identity_info,
                         principal_policy[identity_info['email']]
                             #["Entitlement"].append(entitlement)
                 else:
-                    if os.getenv("ACT_FILE_NO") == "file-251":
+                    if act_file_no == "file-251":
                        principal_policy[identity_info['email']] = {
                            "RECORD_TYPE": "S",
                            "UNIQUE_ID": identity_info['uid'],
@@ -305,12 +313,16 @@ def get_policy_for_identity(identity_info,
                            "LAST_LOGIN": ""
                            # remove entitlement - file 251
                        }
-                    #else os.getenv("ACT_FILE_NO") == "file-252":
-                    else:
+                    elif act_file_no == "file-252":
                        principal_policy[identity_info['email']] = {
                           # entitlement only - file 252
-                            "Entitlement": [f"{role}_{rsc}"]
+                            "Entitlement": [entitlement]
                         }
+                    else:
+                       principal_policy[identity_info['email']] = {
+                            "Entitlement": [entitlement],
+                            "UNIQUE_ID": identity_info['uid']
+                       }
             # print (json.dumps(policy, indent=2, default=str))
 
     return principal_policy[identity_info['email']]
@@ -398,7 +410,7 @@ def parse_assets_output(all_iam_policies_dictionary,
                                 # print(identity_policy)
                                 if identity['email'] in output_dict:
                                     # print(output_dict)
-                                    if os.getenv("ACT_FILE_NO") == "file-251":
+                                    if act_file_no == "file-251":
                                         output_dict[identity['email']]
                                     else:
                                         ['Entitlement'].append(
@@ -431,31 +443,58 @@ def csv_for_252(csvfile, dictionary):
                     writer.writerow([role, unique_id, sor, resource_location, name, status, priv_ind, cert_type, cert_entity,
                                                                                                   description, owning_appl])
 
+def csv_for_253(csvfile, dictionary):
+            header = ['UNIQUE_ID', 'SOR', 'ID_LOCATION', "PRIV_IND", "ATTR_NAME1", "ATTR_VALUE1", "ATTR_NAME2", "ATTR_VALUE2", "ATTR_CONTROL", "LOCATION", "ENTITLEMENT STATUS", "OWNING_APPLICATION"]
+            writer = csv.writer(csvfile, delimiter="|")
+            writer.writerow(header)
+            sor = ""
+            id_location = "Production"
+            status = "A"
+            priv_ind = "3"
+            attr_name1 = "Role"
+            attr_name2 = ""
+            attr_value2 = ""
+            attr_control = ""
+            entitlement_status = "A"
+            owning_application = "GCP"
+            for _sa, sa_value in dictionary.items():
+                for i in sa_value['Entitlement']:
+                    unique_id = sa_value['UNIQUE_ID']
+                    attr_value1 = "_".join(i.split("_", 2)[:2]).replace('(\'','').replace('\',)','')
+                    location = i.split("_", 2)[-1].replace("(","").replace(")","")
+                    location = location.split('@')[0].replace('@','')
+                    name = i.split('@')[0].replace('@','').replace("(","").replace(")","")
+                    writer.writerow([unique_id, sor, id_location, priv_ind, attr_name1, attr_value1, attr_name2, attr_value2,
+                                                               attr_control, location, entitlement_status, owning_application])
 
 def write_dictionary_to_csv(dictionary, filename):
-    # Creating the dictionary in any case makes the values being parses in
-    # for _sa, sa_value....
-
+    # Creating the dictionary. A dictionary of *some* values is always needed
     # Logic per ACT file
-    if os.getenv("ACT_FILE_NO") == "file-251":
+    if act_file_no == "file-251":
         csv_columns = [
             # change headers - file 251
             'RECORD_TYPE','UNIQUE_ID', 'SOR', 'ID_LOCATION', 'EMAIL_DO_WE_NEED', 'NAME', 'STATUS', 'PRIV_IND', 'CERT_TYPE', 'CERT_ENTITY', 'LAST_NAME', 'EMP_ID', 'TID', 'AU', 'OWNING_APPL', 'LAST_LOGIN'
         ]
-    else:
+    elif act_file_no == "file-252":
         csv_columns = [ 'Entitlement' ]
+        csv_file = filename
+    else: #<- file-253 
+        csv_columns = [ 'Entitlement', 'UNIQUE_ID' ]
         csv_file = filename
 
         try:
             with open(csv_file, 'w') as csvfile:
-                if os.getenv("ACT_FILE_NO") == "file-251":
+                if act_file_no == "file-251":
                 #    file 251 - change delimiter
                     writer = csv.DictWriter(csvfile, fieldnames=csv_columns, delimiter='|')
                     writer.writeheader()
                     for _sa, sa_value in dictionary.items():
                         writer.writerow(sa_value)
-                else:
+                elif act_file_no == "file-252":
                     csv_for_252(csvfile, dictionary)
+                else: #<- file-253
+                    csv_for_253(csvfile, dictionary)
+                
 
         except IOError:
             print("I/O error, can't write out CSV file")
@@ -532,8 +571,7 @@ def run_remote():
               "called 'GCS_BUCKET_NAME'")
         exit(0)
     # 10/10 - Added for new formats and files
-    if os.getenv('ACT_FILE_NO'):
-        act_file_no = os.getenv('ACT_FILE_NO')
+    if act_file_no:
         csv_filename = "out-" + act_file_no + ".csv"
     else:
         print("Pass in ACT filename by setting an env var" +
@@ -552,6 +590,7 @@ def run_remote():
     merged_iam_sa_dictionary = parse_assets_output(all_iam_policies,
                                                    all_svc_accts, gcp_org_id)
     csv_file_full_path = f"/tmp/{csv_filename}"
+    # Passed in for file-* logic
     write_dictionary_to_csv(merged_iam_sa_dictionary, csv_file_full_path)
     print(f"Wrote results to {csv_file_full_path}")
     upload_file_gcp_bucket(gcs_bucket, csv_filename, csv_file_full_path)
