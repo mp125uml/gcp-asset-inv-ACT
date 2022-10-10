@@ -223,24 +223,26 @@ def get_policy_for_identity(identity_info,
             rsc_type = iam_policy['asset_type'].split('/')[-1]
         rsc_name = iam_policy['resource'].split('/')[-1]
         rsc = f"{rsc_type}_({rsc_name})"
-        role = binding['role'].replace('roles/', ''),
+        role = binding['role'].replace('roles/', '') # <-
         # new fields - file 251
-        principal_policy[identity_info['email']] = {
-            "RECORD_TYPE": "S",
-            "UNIQUE_ID": identity_info['uid'],
-            "SOR": "",
-            "ID_LOCATION": "Production",
-            "NAME": "",
-            "STATUS": "A",
-            "PRIV_IND": "3",
-            "CERT_TYPE": "APPL",
-            "CERT_ENTITY": "GCP",
-            "LAST_NAME": "",
-            "EMP_ID": "",
-            "TID": "",
-            "AU": "", #need to find labels here...
-            "OWNING_APPL": "GCP",
-            "LAST_LOGIN": "",
+        if os.getenv("ACT_FILE_NO") == "file-251":
+            principal_policy[identity_info['email']] = {
+                "RECORD_TYPE": "S",
+                "UNIQUE_ID": identity_info['uid'],
+                "SOR": "",
+                "ID_LOCATION": "Production",
+                "NAME": "",
+                "STATUS": "A",
+                "PRIV_IND": "3",
+                "CERT_TYPE": "APPL",
+                "CERT_ENTITY": "GCP",
+                "LAST_NAME": "",
+                "EMP_ID": "",
+                "TID": "",
+                "AU": "", #need to find labels here - file 251
+                "OWNING_APPL": "GCP",
+                "LAST_LOGIN": ""
+                # remove entitlement - file 251
         }
 
     else:
@@ -275,29 +277,29 @@ def get_policy_for_identity(identity_info,
             ## Skip the "Policy Resource"
             if rsc_type != "Policy":
                 if identity_info['email'] in principal_policy:
-                    principal_policy[identity_info['email']]
-                    #principal_policy[identity_info['email']][
-                        #"Entitlement"].append(entitlement)
+                    if os.getenv("ACT_FILE_NO") == "file-251":
+                        principal_policy[identity_info['email']]
+                            #"Entitlement"].append(entitlement)
                 else:
-                    # new fields - file 251
-                    principal_policy[identity_info['email']] = {
-                        "RECORD_TYPE": "S",
-                        "UNIQUE_ID": identity_info['uid'],
-                        "SOR": "",
-                        "ID_LOCATION": "Production",
-                        "NAME": identity_info['first_name'] + " " + identity_info['last_name'],
-                        "STATUS": "A",
-                        "PRIV_IND": "3",
-                        "CERT_TYPE": "AU",
-                        "CERT_ENTITY": "",
-                        "LAST_NAME": "",
-                        # "LAST_NAME": "identity_info['last_name']",
-                        "EMP_ID": "",
-                        "TID": "",
-                        "AU": "",
-                        "OWNING_APPL": "GCP",
-                        "LAST_LOGIN": "",
-                    }
+                    if os.getenv("ACT_FILE_NO") == "file-251":
+                       principal_policy[identity_info['email']] = {
+                           "RECORD_TYPE": "S",
+                           "UNIQUE_ID": identity_info['uid'],
+                           "SOR": "",
+                           "ID_LOCATION": "Production",
+                           "NAME": "",
+                           "STATUS": "A",
+                           "PRIV_IND": "3",
+                           "CERT_TYPE": "APPL",
+                           "CERT_ENTITY": "GCP",
+                           "LAST_NAME": "",
+                           "EMP_ID": "",
+                           "TID": "",
+                           "AU": "", #need to find labels here - file 251
+                           "OWNING_APPL": "GCP",
+                           "LAST_LOGIN": ""
+                           # remove entitlement - file 251
+                        }
 
             # print (json.dumps(policy, indent=2, default=str))
 
@@ -398,9 +400,10 @@ def parse_assets_output(all_iam_policies_dictionary,
 
 
 def write_dictionary_to_csv(dictionary, csv_filename):
+    # Logic per ACT file
     if os.getenv("ACT_FILE_NO") == "file-251":
         csv_columns = [
-            # Updated on 9/30 for new files as requested by Martin - change headers - file 251
+            # change headers - file 251
             'RECORD_TYPE','UNIQUE_ID', 'SOR', 'ID_LOCATION', 'EMAIL_DO_WE_NEED', 'NAME', 'STATUS', 'PRIV_IND', 'CERT_TYPE', 'CERT_ENTITY', 'LAST_NAME', 'EMP_ID', 'TID', 'AU', 'OWNING_APPL', 'LAST_LOGIN'
         ]
         csv_file = csv_filename
