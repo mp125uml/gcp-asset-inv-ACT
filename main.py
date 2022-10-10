@@ -427,18 +427,23 @@ def csv_for_252(csvfile, dictionary):
                     unique_id = "_".join(i.split("_", 2)[:2]).replace('(\'','').replace('\'),','')
                     resource_location = i.split("_", 2)[-1].replace("(","").replace(")","")
                     resource_location = resource_location.split('@')[0].replace('@','')
+                    name = i.split('@')[0].replace('@','').replace("(","").replace(")","")
                     writer.writerow([role, unique_id, sor, resource_location, name, status, priv_ind, cert_type, cert_entity,
-                                                                                                   description, owning_appl])
-
+                                                                                                  description, owning_appl])
 
 
 def write_dictionary_to_csv(dictionary, filename):
+    # Creating the dictionary in any case makes the values being parses in
+    # for _sa, sa_value....
+
     # Logic per ACT file
     if os.getenv("ACT_FILE_NO") == "file-251":
         csv_columns = [
             # change headers - file 251
             'RECORD_TYPE','UNIQUE_ID', 'SOR', 'ID_LOCATION', 'EMAIL_DO_WE_NEED', 'NAME', 'STATUS', 'PRIV_IND', 'CERT_TYPE', 'CERT_ENTITY', 'LAST_NAME', 'EMP_ID', 'TID', 'AU', 'OWNING_APPL', 'LAST_LOGIN'
         ]
+    else:
+        csv_columns = [ 'Entitlement' ]
         csv_file = filename
 
         try:
@@ -530,7 +535,6 @@ def run_remote():
     if os.getenv('ACT_FILE_NO'):
         act_file_no = os.getenv('ACT_FILE_NO')
         csv_filename = "out-" + act_file_no + ".csv"
-        print(csv_filename)
     else:
         print("Pass in ACT filename by setting an env var" +
               "called 'ACT_FILE_NO'")
