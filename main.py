@@ -247,7 +247,7 @@ def get_policy_for_identity(identity_info,
                 "LAST_LOGIN": ""
                 # remove entitlement - file 251
             }
-        elif act_file_no == "file-251":
+        elif act_file_no == "file-252":
             principal_policy[identity_info['email']] = {
 	      # entitlement only - file 252
                 "Entitlement": [f"{role}_{rsc}"]
@@ -294,6 +294,8 @@ def get_policy_for_identity(identity_info,
                     if os.getenv("ACT_FILE_NO") == "file-251":
                         principal_policy[identity_info['email']]
                             #["Entitlement"].append(entitlement)
+                    if os.getenv("ACT_FILE_NO") == "file-252":
+                        principal_policy[identity_info['email']]["Entitlement"].append(entitlement)
                 else:
                     if act_file_no == "file-251":
                        principal_policy[identity_info['email']] = {
@@ -424,10 +426,11 @@ def parse_assets_output(all_iam_policies_dictionary,
     return output_dict
 
 def csv_for_251(cvsfile, dictionary):
-             writer = csv.DictWriter(csvfile, fieldnames=csv_columns, delimiter='|')
-             writer.writeheader()
-             for _sa, sa_value in dictionary.items():
-                 writer.writerow(sa_value)
+             print("in 251 function")
+             #writer = csv.DictWriter(csvfile, fieldnames=csv_columns, delimiter='|')
+             #writer.writeheader()
+             #for _sa, sa_value in dictionary.items():
+             #    writer.writerow(sa_value)
 
 def csv_for_252(csvfile, dictionary):
             header = ["RESOURCE_TYPE","UNIQUE_ID", "SOR", "RESOURCE_LOCATION", "NAME", "STATUS", "PRIV_IND", "CERT_TYPE", "CERT_ENTITY", "DESCRIPTION", "OWNING_APPL"]
@@ -494,7 +497,7 @@ def csv_for_255(csvfile, dictionary):
 def write_dictionary_to_csv(dictionary, filename):
     # Creating the dictionary. A dictionary of *some* values is always needed
     # Logic per ACT file
-    if act_file_no == "file-251":
+    if act_file_no == 'file-251':
         csv_columns = [
             'RECORD_TYPE',
             'UNIQUE_ID',
@@ -503,36 +506,39 @@ def write_dictionary_to_csv(dictionary, filename):
             'NAME',
             'STATUS',
             'PRIV_IND',
-            'CERT_TYPE', 
-            'CERT_ENTITY', 
-            'LAST_NAME', 
-            'EMP_ID', 
-            'TID', 
-            'AU', 
+            'CERT_TYPE',
+            'CERT_ENTITY',
+            'LAST_NAME',
+            'EMP_ID',
+            'TID',
+            'AU',
             'OWNING_APPL',
             'LAST_LOGIN'
         ]
-        csv_file = filena,e
-    elif act_file_no == "file-252":
-        csv_columns = [ 'Entitlement' ]
         csv_file = filename
-    elif act_file_no == "file-253":
-        csv_columns = [ 'Entitlement', 'UNIQUE_ID' ]
-        csv_file = filename
+#    elif act_file_no == 'file-252':
     else:
-        csv_columns = []
+        csv_columns = [ 'Entitlement' ] 
         csv_file = filename
+#    elif act_file_no == 'file-253':
+#        csv_columns = [ 'Entitlement', 'UNIQUE_ID' ]
+#        csv_file = filename
+#    else:
+#        csv_columns = []
+#        csv_file = filename
 
         try:
             with open(csv_file, 'w') as csvfile:
-                if act_file_no == "file-251":
-                    csv_for_251(csvfile, dictionary)
-                elif act_file_no == "file-252":
-                    csv_for_252(csvfile, dictionary)
-                elif act_file_no == "file-253":
-                    csv_for_253(csvfile, dictionary)
+                if act_file_no == 'file-251':
+                    print("in 251 two")
+                    csv_for_251(cvsfile, dictionary)
+             #   elif act_file_no == 'file-252':
+             #       csv_for_252(csvfile, dictionary)
+             #   elif act_file_no == 'file-253':
+             #       csv_for_253(csvfile, dictionary)
                 else:
-                    csv_for_255(csvfile, dictionary)
+                    print("in the else")
+                    csv_for_252(csvfile, dictionary)
 		
                 
 
