@@ -15,6 +15,7 @@ from google.cloud import storage
 from google.api_core.exceptions import GoogleAPIError
 import proto
 import googleapiclient.errors
+from datetime import datetime
 
 # Declare as global because this is used in so many places for logic, etc
 act_file_no = os.getenv('ACT_FILE_NO')
@@ -246,7 +247,7 @@ def get_policy_for_identity(identity_info,
                 "LAST_LOGIN": ""
                 # remove entitlement - file 251
             }
-        elif act_file_no == "file-251":
+        elif act_file_no == "file-252":
             principal_policy[identity_info['email']] = {
 	      # entitlement only - file 252
                 "Entitlement": [f"{role}_{rsc}"]
@@ -293,6 +294,10 @@ def get_policy_for_identity(identity_info,
                     if os.getenv("ACT_FILE_NO") == "file-251":
                         principal_policy[identity_info['email']]
                             #["Entitlement"].append(entitlement)
+                    if os.getenv("ACT_FILE_NO") == "file-252":
+                        principal_policy[identity_info['email']]["Entitlement"].append(entitlement)
+                    else:
+                        principal_policy[identity_info['email']]["Entitlement"].append(entitlement)
                 else:
                     if act_file_no == "file-251":
                        principal_policy[identity_info['email']] = {
@@ -412,9 +417,12 @@ def parse_assets_output(all_iam_policies_dictionary,
                                     # print(output_dict)
                                     if act_file_no == "file-251":
                                         output_dict[identity['email']]
-                                    else:
+                                    elif act_file_no == "file-252":
                                         ['Entitlement'].append(
                                             identity_policy['Entitlement'][0])
+                                    else:
+                                        output_dict[identity['email']]
+                                        
                                 else:
                                     output_dict[
                                         identity['email']] = identity_policy
@@ -422,83 +430,160 @@ def parse_assets_output(all_iam_policies_dictionary,
     # print (json.dumps(output_dict, indent=2, default=str))
     return output_dict
 
-def csv_for_252(csvfile, dictionary):
-            header = ['RESOURCE_TYPE','UNIQUE_ID', 'SOR', 'RESOURCE_LOCATION', 'NAME', "STATUS", "PRIV_IND", "CERT_TYPE", "CERT_ENTITY", "DESCRIPTION", "OWNING_APPL"]
-            writer = csv.writer(csvfile, delimiter="|")
-            writer.writerow(header)
-            role = "Role"
-            sor = ""
-            status = "A"
-            priv_ind = "3"
-            cert_type = "APPL"
-            cert_entity = "GCP"
-            description = ""
-            owning_appl = "GCP"
-            for _sa, sa_value in dictionary.items():
-                for i in sa_value['Entitlement']:
-                    unique_id = "_".join(i.split("_", 2)[:2]).replace('(\'','').replace('\'),','')
-                    resource_location = i.split("_", 2)[-1].replace("(","").replace(")","")
-                    resource_location = resource_location.split('@')[0].replace('@','')
-                    name = i.split('@')[0].replace('@','').replace("(","").replace(")","")
-                    writer.writerow([role, unique_id, sor, resource_location, name, status, priv_ind, cert_type, cert_entity,
-                                                                                                  description, owning_appl])
+def csv_for_251(csv_file, csv_columns, dictionary):
+         try:
+             with open(csv_file, 'w') as csvfile:
+                 writer = csv.DictWriter(csvfile, fieldnames=csv_columns, delimiter='|')
+                 writer.writeheader()
+                 for _sa, sa_value in dictionary.items():
+                     writer.writerow(sa_value)
+         except IOError:
+             print("I/O error, can't write out CSV file") 
 
-def csv_for_253(csvfile, dictionary):
-            header = ['UNIQUE_ID', 'SOR', 'ID_LOCATION', "PRIV_IND", "ATTR_NAME1", "ATTR_VALUE1", "ATTR_NAME2", "ATTR_VALUE2", "ATTR_CONTROL", "LOCATION", "ENTITLEMENT STATUS", "OWNING_APPLICATION"]
-            writer = csv.writer(csvfile, delimiter="|")
-            writer.writerow(header)
-            sor = ""
-            id_location = "Production"
-            status = "A"
-            priv_ind = "3"
-            attr_name1 = "Role"
-            attr_name2 = ""
-            attr_value2 = ""
-            attr_control = ""
-            entitlement_status = "A"
-            owning_application = "GCP"
-            for _sa, sa_value in dictionary.items():
-                for i in sa_value['Entitlement']:
-                    unique_id = sa_value['UNIQUE_ID']
-                    attr_value1 = "_".join(i.split("_", 2)[:2]).replace('(\'','').replace('\',)','')
-                    location = i.split("_", 2)[-1].replace("(","").replace(")","")
-                    location = location.split('@')[0].replace('@','')
-                    name = i.split('@')[0].replace('@','').replace("(","").replace(")","")
-                    writer.writerow([unique_id, sor, id_location, priv_ind, attr_name1, attr_value1, attr_name2, attr_value2,
+def csv_for_252(csv_file, csv_columns, dictionary):
+
+         header = ["RESOURCE_TYPE","UNIQUE_ID", "SOR", "RESOURCE_LOCATION", "NAME", "STATUS", "PRIV_IND", "CERT_TYPE", "CERT_ENTITY", "DESCRIPTION", "OWNING_APPL"]
+   
+         try:
+             with open(csv_file, 'w') as csvfile:
+                 writer = csv.writer(csvfile, delimiter="|")
+                 writer.writerow(header)
+                 role = "Role"
+                 sor = ""
+                 status = "A"
+                 priv_ind = "3"
+                 cert_type = "APPL"
+                 cert_entity = "GCP"
+                 description = ""
+                 owning_appl = "GCP"
+                 for _sa, sa_value in dictionary.items():
+                     for i in sa_value['Entitlement']:
+                         unique_id = "_".join(i.split("_", 2)[:2])
+                         resource_location = i.split("_", 2)[-1].replace("(","").replace(")","")
+                         resource_location = resource_location.split('@')[0].replace('@','')
+                         name = i.split('@')[0].replace('@','').replace("(","").replace(")","")
+                         writer.writerow([role, unique_id, sor, resource_location, name, status, priv_ind, cert_type, cert_entity,
+                                                                                                  description, owning_appl])
+         except IOError:
+             print("I/O error, can't write out CSV file")
+
+def csv_for_253(csv_file, csv_columns, dictionary):
+         header = ["UNIQUE_ID", "SOR", "ID_LOCATION", "PRIV_IND", "ATTR_NAME1", "ATTR_VALUE1", "ATTR_NAME2", "ATTR_VALUE2", "ATTR_CONTROL", "LOCATION", "ENTITLEMENT STATUS", "OWNING_APPLICATION"]
+
+         try:
+                with open(csv_file, 'w') as csvfile:
+                    writer = csv.writer(csvfile, delimiter="|")
+                    writer.writerow(header)
+                    sor = ""
+                    id_location = "Production"
+                    status = "A"
+                    priv_ind = "3"
+                    attr_name1 = "Role"
+                    attr_name2 = ""
+                    attr_value2 = ""
+                    attr_control = ""
+                    entitlement_status = "A"
+                    owning_application = "GCP"
+                    for _sa, sa_value in dictionary.items():
+                        for i in sa_value['Entitlement']:
+                            unique_id = sa_value['UNIQUE_ID']
+                            attr_value1 = "_".join(i.split("_", 2)[:2]).replace('(\'','').replace('\',)','')
+                            location = i.split("_", 2)[-1].replace("(","").replace(")","")
+                            location = location.split('@')[0].replace('@','')
+                            name = i.split('@')[0].replace('@','').replace("(","").replace(")","")
+                            writer.writerow([unique_id, sor, id_location, priv_ind, attr_name1, attr_value1, attr_name2, attr_value2,
                                                                attr_control, location, entitlement_status, owning_application])
+
+         except IOError:
+             print("I/O error, can't write out CSV file")
+
+def csv_for_255(csv_file, csv_columns, dictionary):
+
+         header = ["DATE_STAMP", "OWNING_APPLICATION", "HASH_ALGORITHM", "FILE_FORMAT", "T251_ROWS", "T251_HASH", "T252_ROWS",                                                                          "T252_HASH", "T253_ROWS", "T253_HASH", "T254_ROWS", "T254_HASH"]
+         
+         try:
+             with open(csv_file, 'w') as csvfile:
+                 writer = csv.writer(csvfile, delimiter="|")
+                 writer.writerow(header)
+                 timestamp = datetime.today().strftime('%Y/%m/%d %H:%M:%S')
+                 owning_app = "GCP"
+                 hash_algorithm = ""
+                 count = 1
+                 
+                 #T-251 Rows
+                 for _sa, sa_value in dictionary.items():
+                     count += 1
+                     t251_rows = count
+                 t251_hash = ""
+                 
+                 #T-251 Rows
+                 for _sa, sa_value in dictionary.items():
+                     for i in sa_value['Entitlement']: 
+                         count += 1
+                         t252_rows = count
+                 t252_hash = ""
+
+                 #T-253 Rows
+                 for _sa, sa_value in dictionary.items():
+                     for i in sa_value['Entitlement']:
+                         count += 1
+                         t253_rows = count
+                 t253_hash = ""
+
+                 # I was not requested to do T-254
+                 t254_rows = ""
+                 t254_hash = ""
+
+                 file_format = "ASCII-CRLF" #Determined this with Linux `file` command
+                 writer.writerow([timestamp, owning_app, hash_algorithm, file_format, t251_rows, t251_hash, t252_rows, t252_hash, 
+                                                                                         t253_rows, t253_hash, t254_rows, t254_hash])
+
+         except IOError:
+             print("I/O error, can't write out CSV file")
 
 def write_dictionary_to_csv(dictionary, filename):
     # Creating the dictionary. A dictionary of *some* values is always needed
     # Logic per ACT file
-    if act_file_no == "file-251":
+    if act_file_no == 'file-251':
+        print(act_file_no + "1")
         csv_columns = [
-            # change headers - file 251
-            'RECORD_TYPE','UNIQUE_ID', 'SOR', 'ID_LOCATION', 'EMAIL_DO_WE_NEED', 'NAME', 'STATUS', 'PRIV_IND', 'CERT_TYPE', 'CERT_ENTITY', 'LAST_NAME', 'EMP_ID', 'TID', 'AU', 'OWNING_APPL', 'LAST_LOGIN'
+            'RECORD_TYPE',
+            'UNIQUE_ID',
+            'SOR',
+            'ID_LOCATION',
+            'NAME',
+            'STATUS',
+            'PRIV_IND',
+            'CERT_TYPE',
+            'CERT_ENTITY',
+            'LAST_NAME',
+            'EMP_ID',
+            'TID',
+            'AU',
+            'OWNING_APPL',
+            'LAST_LOGIN'
         ]
-    elif act_file_no == "file-252":
-        csv_columns = [ 'Entitlement' ]
         csv_file = filename
-    else: #<- file-253 
+    elif act_file_no == 'file-252':
+        csv_columns = [ 'Entitlement' ] 
+        csv_file = filename
+    elif act_file_no == 'file-253':
         csv_columns = [ 'Entitlement', 'UNIQUE_ID' ]
         csv_file = filename
+    else:
+        csv_columns = []
+        csv_file = filename
 
-        try:
-            with open(csv_file, 'w') as csvfile:
-                if act_file_no == "file-251":
-                #    file 251 - change delimiter
-                    writer = csv.DictWriter(csvfile, fieldnames=csv_columns, delimiter='|')
-                    writer.writeheader()
-                    for _sa, sa_value in dictionary.items():
-                        writer.writerow(sa_value)
-                elif act_file_no == "file-252":
-                    csv_for_252(csvfile, dictionary)
-                else: #<- file-253
-                    csv_for_253(csvfile, dictionary)
+    if act_file_no == 'file-251':
+        csv_for_251(csv_file, csv_columns, dictionary)
+    elif act_file_no == 'file-252':
+        csv_for_252(csv_file, csv_columns, dictionary)
+    elif act_file_no == 'file-253':
+        csv_for_253(csv_file, csv_columns, dictionary)
+    else:
+        csv_for_255(csv_file, csv_columns, dictionary)
+		
                 
-
-        except IOError:
-            print("I/O error, can't write out CSV file")
-
 
 def cf_entry_event(event, context):
     """ Event Entry point for the cloudfunction"""
@@ -590,7 +675,6 @@ def run_remote():
     merged_iam_sa_dictionary = parse_assets_output(all_iam_policies,
                                                    all_svc_accts, gcp_org_id)
     csv_file_full_path = f"/tmp/{csv_filename}"
-    # Passed in for file-* logic
     write_dictionary_to_csv(merged_iam_sa_dictionary, csv_file_full_path)
     print(f"Wrote results to {csv_file_full_path}")
     upload_file_gcp_bucket(gcs_bucket, csv_filename, csv_file_full_path)
