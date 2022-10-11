@@ -504,7 +504,7 @@ def csv_for_255(csv_file, csv_columns, dictionary):
                  writer.writerow(header)
                  timestamp = datetime.today().strftime('%Y/%m/%d %H:%M:%S')
                  owning_app = "GCP"
-                 hash_algorithm = ""
+                 hash_algorithm = "SHA-256"
                  
                  #T-251 Rows
                  count = 1
