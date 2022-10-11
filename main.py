@@ -291,9 +291,8 @@ def get_policy_for_identity(identity_info,
             ## Skip the "Policy Resource"
             if rsc_type != "Policy":
                 if identity_info['email'] in principal_policy:
-                    if os.getenv("ACT_FILE_NO") == "file-251":
+                    if act_file_no == "file-251":
                         principal_policy[identity_info['email']]
-                            #["Entitlement"].append(entitlement)
                     else:
                         principal_policy[identity_info['email']]["Entitlement"].append(entitlement)
                 else:
@@ -309,7 +308,7 @@ def get_policy_for_identity(identity_info,
                            "CERT_TYPE": "APPL",
                            "CERT_ENTITY": "GCP",
                            "LAST_NAME": "",
-                           "EMP_ID": "",
+			   "EMP_ID": "",
                            "TID": "",
                            "AU": "", #need to find labels here - file 251
                            "OWNING_APPL": "GCP",
@@ -505,7 +504,7 @@ def csv_for_255(csv_file, csv_columns, dictionary):
                  writer.writerow(header)
                  timestamp = datetime.today().strftime('%Y/%m/%d %H:%M:%S')
                  owning_app = "GCP"
-                 hash_algorithm = ""
+                 hash_algorithm = "SHA-256"
                  
                  #T-251 Rows
                  count = 1
