@@ -2,7 +2,7 @@
 """
 Script to get a list of service accounts and their IAM policy
 with GCP asset inventory
-			"""
+"""
 import os
 import json
 import codecs
