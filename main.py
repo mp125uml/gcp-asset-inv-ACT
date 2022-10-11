@@ -291,10 +291,9 @@ def get_policy_for_identity(identity_info,
             ## Skip the "Policy Resource"
             if rsc_type != "Policy":
                 if identity_info['email'] in principal_policy:
-                    if os.getenv("ACT_FILE_NO") == "file-251":
+                    if act_file_no == "file-251":
                         principal_policy[identity_info['email']]
-                            #["Entitlement"].append(entitlement)
-                    if os.getenv("ACT_FILE_NO") == "file-252":
+                    if act_file_no == "file-252":
                         principal_policy[identity_info['email']]["Entitlement"].append(entitlement)
                     else:
                         principal_policy[identity_info['email']]["Entitlement"].append(entitlement)
