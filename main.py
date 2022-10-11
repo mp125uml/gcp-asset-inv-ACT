@@ -296,6 +296,8 @@ def get_policy_for_identity(identity_info,
                             #["Entitlement"].append(entitlement)
                     if os.getenv("ACT_FILE_NO") == "file-252":
                         principal_policy[identity_info['email']]["Entitlement"].append(entitlement)
+                    else:
+                        principal_policy[identity_info['email']]["Entitlement"].append(entitlement)
                 else:
                     if act_file_no == "file-251":
                        principal_policy[identity_info['email']] = {
@@ -415,9 +417,12 @@ def parse_assets_output(all_iam_policies_dictionary,
                                     # print(output_dict)
                                     if act_file_no == "file-251":
                                         output_dict[identity['email']]
-                                    else:
+                                    elif act_file_no == "file-252":
                                         ['Entitlement'].append(
                                             identity_policy['Entitlement'][0])
+                                    else:
+                                        output_dict[identity['email']]
+                                        
                                 else:
                                     output_dict[
                                         identity['email']] = identity_policy
@@ -492,21 +497,49 @@ def csv_for_253(csv_file, csv_columns, dictionary):
          except IOError:
              print("I/O error, can't write out CSV file")
 
-def csv_for_255(csvfile, dictionary):
-            header = ["DATE_STAMP", "OWNING_APPLICATION", "HASH_ALGORITHM", "FILE_FORMAT", "T251_ROWS"]
-            writer = csv.writer(csvfile, delimiter="|")
-            writer.writerow(header)
-            timestamp = datetime.today().strftime('%Y/%m/%d %H:%M:%S')
-            owning_app = "GCP"
-            hash_algorithm = ""
-            #T-251 Rows
-            count = 1
-            for _sa, sa_value in dictionary.items():
-                count += 1
-                t251_rows = count
-            
-            file_format = "ASCII-CRLF" #Determined this with Linux `file` command
-            writer.writerow([timestamp, owning_app, hash_algorithm, file_format, t251_rows])
+def csv_for_255(csv_file, csv_columns, dictionary):
+
+         header = ["DATE_STAMP", "OWNING_APPLICATION", "HASH_ALGORITHM", "FILE_FORMAT", "T251_ROWS", "T251_HASH", "T252_ROWS",                                                                          "T252_HASH", "T253_ROWS", "T253_HASH", "T254_ROWS", "T254_HASH"]
+         
+         try:
+             with open(csv_file, 'w') as csvfile:
+                 writer = csv.writer(csvfile, delimiter="|")
+                 writer.writerow(header)
+                 timestamp = datetime.today().strftime('%Y/%m/%d %H:%M:%S')
+                 owning_app = "GCP"
+                 hash_algorithm = ""
+                 count = 1
+                 
+                 #T-251 Rows
+                 for _sa, sa_value in dictionary.items():
+                     count += 1
+                     t251_rows = count
+                 t251_hash = ""
+                 
+                 #T-251 Rows
+                 for _sa, sa_value in dictionary.items():
+                     for i in sa_value['Entitlement']: 
+                         count += 1
+                         t252_rows = count
+                 t252_hash = ""
+
+                 #T-253 Rows
+                 for _sa, sa_value in dictionary.items():
+                     for i in sa_value['Entitlement']:
+                         count += 1
+                         t253_rows = count
+                 t253_hash = ""
+
+                 # I was not requested to do T-254
+                 t254_rows = ""
+                 t254_hash = ""
+
+                 file_format = "ASCII-CRLF" #Determined this with Linux `file` command
+                 writer.writerow([timestamp, owning_app, hash_algorithm, file_format, t251_rows, t251_hash, t252_rows, t252_hash, 
+                                                                                         t253_rows, t253_hash, t254_rows, t254_hash])
+
+         except IOError:
+             print("I/O error, can't write out CSV file")
 
 def write_dictionary_to_csv(dictionary, filename):
     # Creating the dictionary. A dictionary of *some* values is always needed
@@ -534,19 +567,21 @@ def write_dictionary_to_csv(dictionary, filename):
     elif act_file_no == 'file-252':
         csv_columns = [ 'Entitlement' ] 
         csv_file = filename
-    else:
-    #elif act_file_no == 'file-253':
+    elif act_file_no == 'file-253':
         csv_columns = [ 'Entitlement', 'UNIQUE_ID' ]
         csv_file = filename
-#    else:
-#        csv_columns = []
-#        csv_file = filename
+    else:
+        csv_columns = []
+        csv_file = filename
+
     if act_file_no == 'file-251':
         csv_for_251(csv_file, csv_columns, dictionary)
     elif act_file_no == 'file-252':
         csv_for_252(csv_file, csv_columns, dictionary)
-    else:
+    elif act_file_no == 'file-253':
         csv_for_253(csv_file, csv_columns, dictionary)
+    else:
+        csv_for_255(csv_file, csv_columns, dictionary)
 		
                 
 
