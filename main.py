@@ -294,8 +294,6 @@ def get_policy_for_identity(identity_info,
                     if os.getenv("ACT_FILE_NO") == "file-251":
                         principal_policy[identity_info['email']]
                             #["Entitlement"].append(entitlement)
-                    if os.getenv("ACT_FILE_NO") == "file-252":
-                        principal_policy[identity_info['email']]["Entitlement"].append(entitlement)
                     else:
                         principal_policy[identity_info['email']]["Entitlement"].append(entitlement)
                 else:
@@ -508,15 +506,16 @@ def csv_for_255(csv_file, csv_columns, dictionary):
                  timestamp = datetime.today().strftime('%Y/%m/%d %H:%M:%S')
                  owning_app = "GCP"
                  hash_algorithm = ""
-                 count = 1
                  
                  #T-251 Rows
+                 count = 1
                  for _sa, sa_value in dictionary.items():
                      count += 1
                      t251_rows = count
                  t251_hash = ""
                  
                  #T-251 Rows
+                 count = 1
                  for _sa, sa_value in dictionary.items():
                      for i in sa_value['Entitlement']: 
                          count += 1
@@ -524,6 +523,7 @@ def csv_for_255(csv_file, csv_columns, dictionary):
                  t252_hash = ""
 
                  #T-253 Rows
+                 count = 1
                  for _sa, sa_value in dictionary.items():
                      for i in sa_value['Entitlement']:
                          count += 1
