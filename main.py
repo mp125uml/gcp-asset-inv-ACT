@@ -17,9 +17,6 @@ import proto
 import googleapiclient.errors
 from datetime import datetime
 
-# Declare as global because this is used in so many places for logic, etc
-act_file_no = os.getenv('ACT_FILE_NO')
-
 def get_all_sas(org_id):
     """
     Get a list of Service Account and return them as a list of dictionaries
@@ -427,7 +424,26 @@ def parse_assets_output(all_iam_policies_dictionary,
     # print (json.dumps(output_dict, indent=2, default=str))
     return output_dict
 
-def csv_for_251(csv_file, csv_columns, dictionary):
+def csv_for_251(csv_file, dictionary):
+
+         csv_columns = [
+             'RECORD_TYPE',
+             'UNIQUE_ID',
+             'SOR',
+             'ID_LOCATION',
+             'NAME',
+             'STATUS',
+             'PRIV_IND',
+             'CERT_TYPE',
+             'CERT_ENTITY',
+             'LAST_NAME',
+             'EMP_ID',
+             'TID',
+             'AU',
+             'OWNING_APPL',
+             'LAST_LOGIN'
+         ]
+
          try:
              with open(csv_file, 'w') as csvfile:
                  writer = csv.DictWriter(csvfile, fieldnames=csv_columns, delimiter='|')
@@ -437,8 +453,9 @@ def csv_for_251(csv_file, csv_columns, dictionary):
          except IOError:
              print("I/O error, can't write out CSV file") 
 
-def csv_for_252(csv_file, csv_columns, dictionary):
-
+def csv_for_252(csv_file, dictionary):
+    
+         csv_columns = [ 'Entitlement' ]
          header = ["RESOURCE_TYPE","UNIQUE_ID", "SOR", "RESOURCE_LOCATION", "NAME", "STATUS", "PRIV_IND", "CERT_TYPE", "CERT_ENTITY", "DESCRIPTION", "OWNING_APPL"]
    
          try:
@@ -464,7 +481,9 @@ def csv_for_252(csv_file, csv_columns, dictionary):
          except IOError:
              print("I/O error, can't write out CSV file")
 
-def csv_for_253(csv_file, csv_columns, dictionary):
+def csv_for_253(csv_file, dictionary):
+ 
+         csv_columns = [ 'Entitlement', 'UNIQUE_ID' ]
          header = ["UNIQUE_ID", "SOR", "ID_LOCATION", "PRIV_IND", "ATTR_NAME1", "ATTR_VALUE1", "ATTR_NAME2", "ATTR_VALUE2", "ATTR_CONTROL", "LOCATION", "ENTITLEMENT STATUS", "OWNING_APPLICATION"]
 
          try:
@@ -494,8 +513,9 @@ def csv_for_253(csv_file, csv_columns, dictionary):
          except IOError:
              print("I/O error, can't write out CSV file")
 
-def csv_for_255(csv_file, csv_columns, dictionary):
+def csv_for_255(csv_file, dictionary):
 
+         csv_columns = []
          header = ["DATE_STAMP", "OWNING_APPLICATION", "HASH_ALGORITHM", "FILE_FORMAT", "T251_ROWS", "T251_HASH", "T252_ROWS",                                                                          "T252_HASH", "T253_ROWS", "T253_HASH", "T254_ROWS", "T254_HASH"]
          
          try:
@@ -541,48 +561,19 @@ def csv_for_255(csv_file, csv_columns, dictionary):
              print("I/O error, can't write out CSV file")
 
 def write_dictionary_to_csv(dictionary, filename):
-    # Creating the dictionary. A dictionary of *some* values is always needed
-    # Logic per ACT file
-    if act_file_no == 'file-251':
-        print(act_file_no + "1")
-        csv_columns = [
-            'RECORD_TYPE',
-            'UNIQUE_ID',
-            'SOR',
-            'ID_LOCATION',
-            'NAME',
-            'STATUS',
-            'PRIV_IND',
-            'CERT_TYPE',
-            'CERT_ENTITY',
-            'LAST_NAME',
-            'EMP_ID',
-            'TID',
-            'AU',
-            'OWNING_APPL',
-            'LAST_LOGIN'
-        ]
-        csv_file = filename
-    elif act_file_no == 'file-252':
-        csv_columns = [ 'Entitlement' ] 
-        csv_file = filename
-    elif act_file_no == 'file-253':
-        csv_columns = [ 'Entitlement', 'UNIQUE_ID' ]
-        csv_file = filename
-    else:
-        csv_columns = []
-        csv_file = filename
 
     if act_file_no == 'file-251':
-        csv_for_251(csv_file, csv_columns, dictionary)
+        csv_file = filename
+        csv_for_251(csv_file, dictionary)
     elif act_file_no == 'file-252':
-        csv_for_252(csv_file, csv_columns, dictionary)
+        csv_file = filename
+        csv_for_252(csv_file, dictionary)
     elif act_file_no == 'file-253':
-        csv_for_253(csv_file, csv_columns, dictionary)
+        csv_file = filename
+        csv_for_253(csv_file, dictionary)
     else:
-        csv_for_255(csv_file, csv_columns, dictionary)
-		
-                
+        csv_file = filename
+        csv_for_255(csv_file, dictionary)
 
 def cf_entry_event(event, context):
     """ Event Entry point for the cloudfunction"""
@@ -654,30 +645,26 @@ def run_remote():
         print("Pass in GCS Bucket by setting an env var " +
               "called 'GCS_BUCKET_NAME'")
         exit(0)
-    # 10/10 - Added for new formats and files
-    if act_file_no:
+    '''
+    NOTE All logic is built around the act_file_no (initially it was a command line argument)
+          to get one file per run. This sections is "run once, four files". The act_file_no has
+          been initiated as a "global" variable as it is used so often.
+    '''
+      
+    file_no = [ "251", "252", "253", "255" ]
+    for num in file_no:
+        global act_file_no
+        act_file_no = "file-" + num
         csv_filename = "out-" + act_file_no + ".csv"
-    else:
-        print("Pass in ACT filename by setting an env var" +
-              "called 'ACT_FILE_NO'")
-        exit(0)
-    # 10/10 - Removed for new formats and files
-    #if os.getenv("CSV_OUTPUT_FILE"):
-    #    csv_filename = os.getenv("CSV_OUTPUT_FILE")
-    #else:
-    #   print("Pass in output filename by setting an env var " +
-    #          "called 'CSV_OUTPUT_FILE'")
-    #    exit(0)
-
-    all_iam_policies = get_all_iam_policies(gcp_org_id)
-    all_svc_accts = get_all_sas(gcp_org_id)
-    merged_iam_sa_dictionary = parse_assets_output(all_iam_policies,
+        all_iam_policies = get_all_iam_policies(gcp_org_id)
+        all_svc_accts = get_all_sas(gcp_org_id)
+        merged_iam_sa_dictionary = parse_assets_output(all_iam_policies,
                                                    all_svc_accts, gcp_org_id)
-    csv_file_full_path = f"/tmp/{csv_filename}"
-    write_dictionary_to_csv(merged_iam_sa_dictionary, csv_file_full_path)
-    print(f"Wrote results to {csv_file_full_path}")
-    upload_file_gcp_bucket(gcs_bucket, csv_filename, csv_file_full_path)
-    print(f"Uploaded file {csv_file_full_path} to {gcs_bucket}")
+        csv_file_full_path = f"/tmp/{csv_filename}"
+        write_dictionary_to_csv(merged_iam_sa_dictionary, csv_file_full_path)
+        print(f"Wrote results to {csv_file_full_path}")
+        upload_file_gcp_bucket(gcs_bucket, csv_filename, csv_file_full_path)
+        print(f"Uploaded file {csv_file_full_path} to {gcs_bucket}")
 
 
 if __name__ == "__main__":
