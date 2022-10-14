@@ -1,5 +1,8 @@
 # gcp-asset-inventory
 
+## Purpose
+This script will analyze all IAM assets (users, service accounts, policies, roles, etc) and use that data to create ACT files (251, 252, 253, 254). One run of the script will place the files in /tmp as well as the storage bucket created below
+
 ## Prereqs
 First let's install the necessary libraries for python:
 
@@ -114,38 +117,11 @@ And you can checkt out the contents of the file like so:
 ```
 
 ### Local Mode
-In local mode you need to generate the cloud asset outputs manually and pass them to the script:
-
-```bash
-# generate all the IAM Policies
-> gcloud asset search-all-iam-policies --scope=organizations/${GCP_ORG_ID} --format json > all-iam-pol.json
-# generate all the Service Accounts
-gcloud asset search-all-resources --scope=organizations/${GCP_ORG_ID} --asset-types="iam.googleapis.com/ServiceAccount" --format json > all-sas.json
-# run the script
-> python3 main.py -l -i all-iam-pol.json -s all-sas.json -o out.csv
-Script running in local mode
-Wrote results to out.csv
-```
-
-And you can again check out the results:
-
-```bash
-> head -2 out.csv
-First_Name,Last_Name,UniqueID,Entitlement,Email
-service-PROJECT_NUM,service-PROJECT_NUM,service-PROJECT_NUM@compute-system.iam.gserviceaccount.com,roles/compute.serviceAgent -> Project (PROJECT_ID),service-PROJECT_NUM@compute-system.iam.gserviceaccount.com
-```
-
-#### Uploading to a Storage Bucket
-In local mode you can optionally upload the results to a storage bucket as well:
-
-```bash
-> python3 main.py -l -i all-iam-pol.json -s all-sas.json -o out.csv -g ${GCS_BUCKET_NAME}
-Script running in local mode
-Wrote results to out.csv
-Uploaded file out.csv to ${GCS_BUCKET_NAME}
-```
+**DEPRECIATED**: This version of the asset inventory script can no longer run locally
 
 ## Execute it from a cloud function
+**NOTE**: this has not yet been tested with this version of the script
+
 The user creating the function will require the following role: `roles/cloudfunctions.admin`. And the following API has to be enabled: `cloudfunctions.googleapis.com`. Run the following to create the cloud function:
 
 ```bash
