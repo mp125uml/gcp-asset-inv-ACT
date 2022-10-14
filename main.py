@@ -438,7 +438,6 @@ def act_file_252(dictionary, filename):
  
     try:
         with open(csv_file, 'w') as csvfile:
-            header = ["RESOURCE_TYPE","UNIQUE_ID", "SOR", "RESOURCE_LOCATION", "NAME", "STATUS", "PRIV_IND", "CERT_TYPE", "CERT_ENTITY", "DESCRIPTION", "OWNING_APPL", "EMAIL"]
             writer = csv.writer(csvfile, delimiter="|")
             writer.writerow(header)
             role = "Role"
@@ -448,20 +447,18 @@ def act_file_252(dictionary, filename):
             cert_type = "APPL"
             cert_entity = "GCP"
             description = ""
-            owning_appl = "GCP"
             for _sa, sa_value in dictionary.items():
-                email = sa_value['EMAIL']
-                if "sa-prod-corp" in email:
-                    owning_appl = email.split("@", 1)[0]
-                    print(owning_appl)                        
-                else:
-                    print(owning_appl)
                 for i in sa_value['Entitlement']:
+                    email = sa_value['EMAIL']
+                    if "sa-prod-corp" in email:
+                        owning_application = email.split("@", 1)[0].split("-", 3)[3]
+                    else:
+                        owning_application = "GCP"
                     unique_id = "_".join(i.split("_", 2)[:2])
                     resource_location = i.split("_", 2)[-1].replace("(","").replace(")","")
                     resource_location = resource_location.split('@')[0].replace('@','')
                     name = i.split('@')[0].replace('@','').replace("(","").replace(")","")
-                    writer.writerow([role, unique_id, sor, resource_location, name, status, priv_ind, cert_type, cert_entity, description, owning_appl])
+                    writer.writerow([role, unique_id, sor, resource_location, name, status, priv_ind, cert_type, cert_entity, description, owning_application])
 
     except IOError:
         print("I/O error, can't write out CSV file") 
@@ -485,9 +482,13 @@ def act_file_253(dictionary, filename):
             attr_value2 = ""
             attr_control = ""
             entitlement_status = "A"
-            owning_application = "GCP"
             for _sa, sa_value in dictionary.items():
                 for i in sa_value['Entitlement']:
+                    email = sa_value['EMAIL']
+                    if "sa-prod-corp" in email:
+                        owning_application = email.split("@", 1)[0].split("-", 3)[3]
+                    else:
+                        owning_application = "GCP"
                     unique_id = sa_value['UNIQUE_ID']
                     attr_value1 = "_".join(i.split("_", 2)[:2]).replace('(\'','').replace('\',)','')
                     location = i.split("_", 2)[-1].replace("(","").replace(")","")
@@ -547,14 +548,14 @@ def act_file_255(dictionary, filename):
 
 def write_dictionary_to_csv(dictionary, filename):
 
-    #if act_file_no == 'file-251': 
-       # act_file_251(dictionary, filename)
-    if act_file_no == 'file-252': 
+    if act_file_no == 'file-251': 
+        act_file_251(dictionary, filename)
+    elif act_file_no == 'file-252': 
         act_file_252(dictionary, filename)
-    #elif act_file_no == 'file-253': 
-       # act_file_253(dictionary, filename)
-    #else: 
-       # act_file_255(dictionary, filename)
+    elif act_file_no == 'file-253': 
+        act_file_253(dictionary, filename)
+    else: 
+        act_file_255(dictionary, filename)
 
 def cf_entry_event(event, context):
     """ Event Entry point for the cloudfunction"""
@@ -588,7 +589,8 @@ def cf_entry_http(request):
         print("Remote mode failed")
         exit(0)
 
-
+'''
+# No longer runs local with all of the new logic, etc
 def run_local(iam_json_filename, sas_json_filename, csv_filename, gcs_bucket):
     """
     Execute the script in local mode, this expect json files to be passed in
@@ -607,7 +609,7 @@ def run_local(iam_json_filename, sas_json_filename, csv_filename, gcs_bucket):
     if gcs_bucket:
         upload_file_gcp_bucket(gcs_bucket, csv_filename, csv_filename)
         print(f"Uploaded file {csv_filename} to {gcs_bucket}")
-
+'''
 
 def run_remote():
     """
@@ -627,12 +629,6 @@ def run_remote():
               "called 'GCS_BUCKET_NAME'")
         exit(0)
 
-    if os.getenv("CSV_OUTPUT_FILE"):
-        csv_filename = os.getenv("CSV_OUTPUT_FILE")
-    else:
-        print("Pass in output filename by setting an env var " +
-              "called 'CSV_OUTPUT_FILE'")
-        exit(0)
     file_no = [ "251", "252", "253", "255" ]
     for num in file_no:
         global act_file_no
