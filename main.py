@@ -225,6 +225,11 @@ def get_policy_for_identity(identity_info,
         rsc_name = iam_policy['resource'].split('/')[-1]
         rsc = f"{rsc_type}_({rsc_name})"
         role = binding['role'].replace('roles/', '')
+        if "sa-prod-corp" in identity_info['email']:
+            owning_appl = identity_info['email'].split("@", 1)[0].split("-", 3)[3]
+            owning_appl = owning_appl.replace("(","").replace(")","")
+        else:
+            owning_appl = "GCP"
         principal_policy[identity_info['email']] = {
             # 10-13 Change for ACT files
         	"RECORD_TYPE": "S",
@@ -240,7 +245,7 @@ def get_policy_for_identity(identity_info,
                 "EMP_ID": "",
                 "TID": "",
                 "AU": "", #need to find labels here - file 251
-                "OWNING_APPL": "GCP",
+                "OWNING_APPL": owning_appl,
                 "LAST_LOGIN": "",
                 "EMAIL": identity_info['email'],
                 "Entitlement": [f"{role}_{rsc}"]
@@ -432,8 +437,8 @@ def act_file_251(dictionary, filename):
 
 def act_file_252(dictionary, filename):
 
-    csv_columns = [ 'Entitlement', 'EMAIL' ]
-    header = ["RESOURCE_TYPE","UNIQUE_ID", "SOR", "RESOURCE_LOCATION", "NAME", "STATUS", "PRIV_IND", "CERT_TYPE", "CERT_ENTITY", "DESCRIPTION", "OWNING_APPLICATION"]
+    csv_columns = [ 'Entitlement', 'OWNING_APPL' ]
+    header = ["RESOURCE_TYPE","UNIQUE_ID", "SOR", "RESOURCE_LOCATION", "NAME", "STATUS", "PRIV_IND", "CERT_TYPE", "CERT_ENTITY", "DESCRIPTION", "OWNING_APPL"]
     csv_file = filename
  
     try:
@@ -449,11 +454,7 @@ def act_file_252(dictionary, filename):
             description = ""
             for _sa, sa_value in dictionary.items():
                 for i in sa_value['Entitlement']:
-                    email = sa_value['EMAIL']
-                    if "sa-prod-corp" in email:
-                        owning_application = email.split("@", 1)[0].split("-", 3)[3]
-                    else:
-                        owning_application = "GCP"
+                    owning_application = sa_value['OWNING_APPL']
                     unique_id = "_".join(i.split("_", 2)[:2])
                     resource_location = i.split("_", 2)[-1].replace("(","").replace(")","")
                     resource_location = resource_location.split('@')[0].replace('@','')
@@ -465,7 +466,7 @@ def act_file_252(dictionary, filename):
 
 def act_file_253(dictionary, filename):
 
-    csv_columns = [ 'Entitlement', 'UNIQUE_ID' ]
+    csv_columns = [ 'Entitlement', 'UNIQUE_ID', 'OWNING_APPL' ]
     header = ["UNIQUE_ID", "SOR", "ID_LOCATION", "PRIV_IND", "ATTR_NAME1", "ATTR_VALUE1", "ATTR_NAME2", "ATTR_VALUE2", "ATTR_CONTROL", "LOCATION", "ENTITLEMENT STATUS", "OWNING_APPLICATION"]
     csv_file = filename
 
@@ -484,11 +485,7 @@ def act_file_253(dictionary, filename):
             entitlement_status = "A"
             for _sa, sa_value in dictionary.items():
                 for i in sa_value['Entitlement']:
-                    email = sa_value['EMAIL']
-                    if "sa-prod-corp" in email:
-                        owning_application = email.split("@", 1)[0].split("-", 3)[3]
-                    else:
-                        owning_application = "GCP"
+                    owning_application = sa_value['OWNING_APPL']
                     unique_id = sa_value['UNIQUE_ID']
                     attr_value1 = "_".join(i.split("_", 2)[:2]).replace('(\'','').replace('\',)','')
                     location = i.split("_", 2)[-1].replace("(","").replace(")","")
