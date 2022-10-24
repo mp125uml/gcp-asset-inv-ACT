@@ -1,7 +1,7 @@
 # gcp-asset-inventory
 
 ## Purpose
-This script will analyze all IAM assets (users, service accounts, policies, roles, etc) and use that data to create ACT files (251, 252, 253, 254). One run of the script will place the files in /tmp as well as the storage bucket created below
+This script will analyze all IAM assets (users, service accounts, policies, roles, etc) and use that data to create ACT files (251, 252, 253, 255). One run of the script will place the files in /tmp as well as the storage bucket created below. This script can also be run on your local machine as detailed below.
 
 ## Prereqs
 First let's install the necessary libraries for python:
