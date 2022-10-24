@@ -149,9 +149,10 @@ Uploaded file out.csv to ${GCS_BUCKET_NAME}
 ```
 
 ## Execute it from a cloud function
-**NOTE**: this has not yet been tested with this version of the script
 
-The user creating the function will require the following role: `roles/cloudfunctions.admin`. And the following API has to be enabled: `cloudfunctions.googleapis.com`. Run the following to create the cloud function:
+The user creating the function will require the following role: `roles/cloudfunctions.admin`. And the following API has to be enabled: `cloudfunctions.googleapis.com`. 
+
+Run the following to create the cloud function:
 
 ```bash
 # setup all the variables
@@ -166,12 +167,28 @@ The user creating the function will require the following role: `roles/cloudfunc
 # check out the git repo
 > git clone https://github.com/elatovg/gcp-asset-inventory
 > cd gcp-asset-inventory
+
+```bash
 # deploy the function using the source in the current directory
 > gcloud functions deploy ${CLOUD_FN_NAME} --runtime python39 \
   --set-env-vars "GCP_ORG_ID=${GCP_ORG_ID},GCS_BUCKET_NAME=${GCS_BUCKET_NAME},CSV_OUTPUT_FILE=${CSV_OUTPUT_FILE}" \
   --region ${REGION} --service-account ${SA_EMAIL} \
   --entry-point cf_entry_http --trigger-http --no-allow-unauthenticated
 ```
+
+If you see this error (or one similar to it:
+
+```bash
+ERROR: (gcloud.functions.deploy) ResponseError: status=[403], code=[Ok], message=[Missing necessary permission iam.serviceAccounts.actAs for cloud-functions-mixer on the service account asset-viewer@htc-terraform.iam.gserviceaccount.com.
+```
+
+You will be required to run the following command
+
+```bash
+gcloud iam service-accounts add-iam-policy-binding ${SA_EMAIL} --member=serviceAccount:${SA_EMAIL} --role=roles/iam.serviceAccountUser
+```
+
+If successful, rerun the command to create the function.
 
 Then you can trigger the function manually:
 
