@@ -362,7 +362,7 @@ def parse_assets_output(all_iam_policies_dictionary,
     # ignored_sa_accounts = set(('deleted'))
     for iam_policy in all_iam_policies_dictionary:
         # Skip the Policy Resource type
-        if iam_policy['asset_type'] != "orgpolicy.googleapis.com/Policy":
+        #if iam_policy['asset_type'] != "orgpolicy.googleapis.com/Policy":
             if iam_policy['policy']['bindings']:
                 for binding in iam_policy['policy']['bindings']:
                     for member in binding['members']:
@@ -586,7 +586,7 @@ def cf_entry_http(request):
         print("Remote mode failed")
         exit(0)
 
-'''
+### Trying again - 10/24
 # No longer runs local with all of the new logic, etc
 def run_local(iam_json_filename, sas_json_filename, csv_filename, gcs_bucket):
     """
@@ -600,13 +600,17 @@ def run_local(iam_json_filename, sas_json_filename, csv_filename, gcs_bucket):
     ## Write out CSV from the Dictionary
     merged_iam_sa_dictionary = parse_assets_output(all_iam_policies,
                                                    all_svc_accts)
-    write_dictionary_to_csv(merged_iam_sa_dictionary, csv_filename)
-    print(f"Wrote results to {csv_filename}")
+    file_no = [ "251", "252", "253", "255" ]
+    for num in file_no:
+        global act_file_no
+        act_file_no = "file-" + num
+        csv_filename = "out-" + act_file_no + ".csv"
+        write_dictionary_to_csv(merged_iam_sa_dictionary, csv_filename)
+        print(f"Wrote results to {csv_filename}")
 
     if gcs_bucket:
         upload_file_gcp_bucket(gcs_bucket, csv_filename, csv_filename)
         print(f"Uploaded file {csv_filename} to {gcs_bucket}")
-'''
 
 def run_remote():
     """
