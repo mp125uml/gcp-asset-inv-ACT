@@ -487,9 +487,11 @@ def act_file_253(dictionary, filename):
                 for i in sa_value['Entitlement']:
                     owning_application = sa_value['OWNING_APPL']
                     unique_id = sa_value['UNIQUE_ID']
-                    attr_value1 = "_".join(i.split("_", 2)[:2]).replace('(\'','').replace('\',)','')
-                    location = i.split("_", 2)[-1].replace("(","").replace(")","")
-                    location = location.split('@')[0].replace('@','')
+                   # attr_value1 = "_".join(i.split("_", 2)[:2]).replace('(\'','').replace('\',)','')
+                   attr_value1 = i
+                   location = i
+                   # location = i.split("_", 2)[-1].replace("(","").replace(")","")
+                   # location = location.split('@')[0].replace('@','')
                     name = i.split('@')[0].replace('@','').replace("(","").replace(")","")
                     writer.writerow([unique_id, sor, id_location, priv_ind, attr_name1, attr_value1, attr_name2,                                 attr_value2, attr_control, location, entitlement_status, owning_application])
 
