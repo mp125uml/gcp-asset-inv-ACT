@@ -274,8 +274,9 @@ def get_policy_for_identity(identity_info,
             if policy['identity_list']['group_edges']:
                 group_name = policy['identity_list']['group_edges'][0][
                     'source_node'].replace(':', '_')
-                add_info = f'via_{group_name}'
-                entitlement = f"{role}_{rsc}_{add_info}"
+                # Vijay change to remove via_group from entries
+                #add_info = f'via_{group_name}'
+                entitlement = f"{role}_{rsc}"
             else:
                 entitlement = f"{role}_{rsc}"
 
