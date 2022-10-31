@@ -55,7 +55,6 @@ def get_iam_policies(svc_account, org_id):
     scope = f"organizations/{org_id}"
     query = f"policy:{svc_account}"
     client = asset_v1.AssetServiceClient()
-    asset_types = "orgpolicy.googleapis.com/Policy"
     try:
         response = client.search_all_iam_policies(request={
             "scope": scope,
