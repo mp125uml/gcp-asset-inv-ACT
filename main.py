@@ -351,7 +351,62 @@ def get_identity_info(member):
     return identity_info
 
 
-def parse_assets_output(all_iam_policies_dictionary,
+def parse_assets_output_remote(all_iam_policies_dictionary,
+                        all_sas_dictionary,
+                        gcp_org_id=None):
+    """
+    Take input from `gcloud asset search-all-iam-policies` and
+    `gcloud asset search-all-resources --asset-types='iam.googleapis.com/ServiceAccount'`
+    and produce a dictionary of those files merged
+    """
+    output_dict = {}
+    # ignored_sa_accounts = set(('deleted'))
+	
+    for iam_policy in all_iam_policies_dictionary:
+        # Skip the Policy Resource type
+        if iam_policy['asset_type'] != "orgpolicy.googleapis.com/Policy":
+            if iam_policy['policy']['bindings']:
+                for binding in iam_policy['policy']['bindings']:
+                    for member in binding['members']:
+                        # print(member)
+                        identity = get_identity_info(member)
+                        if identity[
+                                'sa_type'] == 'user' and gcp_org_id is not None:
+                            identity['uid'] = identity['email']
+                            if identity['email'] not in output_dict:
+                                identity_policy = get_policy_for_identity(
+                                    identity,
+                                    iam_policy=None,
+                                    org_id=gcp_org_id)
+                                # print(identity_policy)
+                                output_dict[identity['email']] = identity_policy
+
+                        elif identity['sa_type'] != 'notUsed':
+                            if identity['sa_type'] == 'user':
+                                identity['uid'] = identity['email']
+                            else:
+                                identity['uid'] = get_uid_from_email(
+                                    identity['email'], all_sas_dictionary)
+                            if identity['uid'] != 'gcp_owned':
+                                identity_policy = get_policy_for_identity(
+                                    identity,
+                                    iam_policy=iam_policy,
+                                    binding=binding,
+                                    org_id=None)
+                                # print(identity_policy)
+                                if identity['email'] in output_dict:
+                                    # print(output_dict)
+                                    output_dict[identity['email']][
+                                        'Entitlement'].append(
+                                            identity_policy['Entitlement'][0])
+                                else:
+                                    output_dict[
+                                        identity['email']] = identity_policy
+
+    # print (json.dumps(output_dict, indent=2, default=str))
+    return output_dict
+
+def parse_assets_output_local(all_iam_policies_dictionary,
                         all_sas_dictionary,
                         gcp_org_id=None):
     """
@@ -604,7 +659,7 @@ def run_local(iam_json_filename, sas_json_filename, csv_filename, gcs_bucket):
     all_svc_accts = import_json_as_dictionary(sas_json_filename)
 
     ## Write out CSV from the Dictionary
-    merged_iam_sa_dictionary = parse_assets_output(all_iam_policies,
+    merged_iam_sa_dictionary = parse_assets_output_local(all_iam_policies,
                                                    all_svc_accts)
     file_no = [ "251", "252", "253", "255" ]
     for num in file_no:
@@ -643,7 +698,7 @@ def run_remote():
         csv_filename = "out-" + act_file_no + ".csv"
         all_iam_policies = get_all_iam_policies(gcp_org_id)
         all_svc_accts = get_all_sas(gcp_org_id)
-        merged_iam_sa_dictionary = parse_assets_output(all_iam_policies,
+        merged_iam_sa_dictionary = parse_assets_output_remote(all_iam_policies,
                                                    all_svc_accts, gcp_org_id)
         csv_file_full_path = f"/tmp/{csv_filename}"
         write_dictionary_to_csv(merged_iam_sa_dictionary, csv_file_full_path)
