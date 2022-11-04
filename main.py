@@ -83,16 +83,18 @@ def get_all_iam_policies(org_id):
     """
     scope = f"organizations/{org_id}"
     client = asset_v1.AssetServiceClient()
+
     try:
         response = client.search_all_iam_policies(request={"scope": scope})
     except (GoogleAPIError, googleapiclient.errors.HttpError) as err:
         print(f'API Error: {err}')
         exit(0)
+   
     ## converting protobuf to dictionary
     # https://github.com/googleapis/python-vision/issues/70#issuecomment-749135327
     serializable_assets = [proto.Message.to_dict(asset) for asset in response]
+    
     return serializable_assets
-
 
 def upload_content_gcp_bucket(gcp_bucket, dest_filename, file_contents):
     """Uploads a file to the bucket by using it's contents"""
@@ -455,7 +457,11 @@ def act_file_252(dictionary, filename):
             cert_entity = "GCP"
             description = ""
             for _sa, sa_value in dictionary.items():
-                for i in sa_value['Entitlement']:
+                # Cleanup sandbox and nonprod entries
+                Entitlement = sa_value['Entitlement']
+                Entitlement = [item for item in Entitlement if not 'sandbox' in item]
+                Entitlement = [item for item in Entitlement if not 'nonprod' in item]
+                for i in Entitlement:
                     owning_application = sa_value['OWNING_APPL']
                     unique_id = "_".join(i.split("_", 2)[:2])
                     resource_location = i.split("_", 2)[-1].replace("(","").replace(")","")
@@ -486,9 +492,11 @@ def act_file_253(dictionary, filename):
             attr_control = ""
             entitlement_status = "A"
             for _sa, sa_value in dictionary.items():
-                # Remove duplicates from a user's Entitlement before processing
+                # Clean-up Duplicates, sandbox, and nonprod entries
                 Entitlement = sa_value['Entitlement']
                 Entitlement = list(set(Entitlement))
+                Entitlement = [item for item in Entitlement if not 'sandbox' in item]
+                Entitlement = [item for item in Entitlement if not 'nonprod' in item]
                 for i in Entitlement:
                     owning_application = sa_value['OWNING_APPL']
                     unique_id = sa_value['UNIQUE_ID']
@@ -524,7 +532,10 @@ def act_file_255(dictionary, filename):
             #T-252 Rows
             count = 1
             for _sa, sa_value in dictionary.items():
-                for i in sa_value['Entitlement']: 
+                Entitlement = sa_value['Entitlement']
+                Entitlement = [item for item in Entitlement if not 'sandbox' in item]
+                Entitlement = [item for item in Entitlement if not 'nonprod' in item]
+                for i in Entitlement: 
                     count += 1
                     t252_rows = count
             t252_hash = ""
@@ -532,9 +543,10 @@ def act_file_255(dictionary, filename):
             #T-253 Rows
             count = 1
             for _sa, sa_value in dictionary.items():
-                # Remove duplicates from a user's Entitlement before processing 
                 Entitlement = sa_value['Entitlement']
                 Entitlement = list(set(Entitlement))
+                Entitlement = [item for item in Entitlement if not 'sandbox' in item]
+                Entitlement = [item for item in Entitlement if not 'nonprod' in item]
                 for i in Entitlement:
                     count += 1
                     t253_rows = count
